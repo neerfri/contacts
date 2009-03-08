@@ -3,6 +3,7 @@ require 'contacts/version'
 module Contacts
   
   Identifier = 'Ruby Contacts v' + VERSION::STRING
+  DEFAULT_CONFIG_FILE_PATH = File.join(File.dirname(__FILE__), '/../config/contacts.yml')
   
   # An object that represents a single contact
   class Contact
@@ -43,4 +44,24 @@ module Contacts
     end
   end
   
+  
+  def self.auth_redirect_url_for(provider, options={})
+    case provider
+      when "Google"
+        Contacts::Google.authentication_url(options[:return_uri])
+      when "WindowsLive"
+        Contacts::WindowsLive.new.get_authentication_url
+    end
+  end
+  
+  def self.load_config_from_file(path)
+    @@config = YAML.load_file(path)
+  end
+  
+  def self.config
+    Thread.exclusive do
+      load_config_from_file(DEFAULT_CONFIG_FILE_PATH) if !defined(@@config)
+    end
+    @@config
+  end
 end
