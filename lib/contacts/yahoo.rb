@@ -71,7 +71,7 @@ module Contacts
     # You can check an example of a config file inside config/ directory
     #
     def initialize(config_file=CONFIG_FILE)
-      confs = YAML.load_file(config_file)['yahoo']
+      confs = config_file ? YAML.load_file(config_file)['yahoo'] : Contacts.config['yahoo']
       @appid = confs['appid']
       @secret = confs['secret']
     end

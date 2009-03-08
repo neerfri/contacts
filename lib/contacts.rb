@@ -51,16 +51,19 @@ module Contacts
         Contacts::Google.authentication_url(options[:return_uri])
       when "WindowsLive"
         Contacts::WindowsLive.new.get_authentication_url
+      when "Yahoo"
+        Contacts::Yahoo.new.get_authentication_url
     end
   end
   
   def self.load_config_from_file(path)
-    @@config = YAML.load_file(path)
+    config_hash = YAML.load_file(path)
+    @@config = config_hash[ENV['RAILS_ENV']] ? config_hash[ENV['RAILS_ENV']] : config_hash 
   end
-  
+
   def self.config
     Thread.exclusive do
-      load_config_from_file(DEFAULT_CONFIG_FILE_PATH) if !defined(@@config)
+      load_config_from_file(DEFAULT_CONFIG_FILE_PATH) if !defined?(@@config)
     end
     @@config
   end
