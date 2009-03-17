@@ -28,6 +28,43 @@ describe Contacts::Google, '.authentication_url' do
     pairs.should include('session=1')
   end
 
+  it 'should imply secure=true when the key parameter is set' do
+    rsa = mock('OpenSSL::PKey::RSA', :private_encrypt => 'signature')
+    digest = mock('OpenSSL::Digest::SHA1', :hexdigest => 'digest')
+    OpenSSL::Digest::SHA1.expects(:new).returns(digest).at_least_once
+    OpenSSL::PKey::RSA.expects(:new).with('secret-key').returns(rsa).at_least_once
+
+    pairs = parse_authentication_url(nil, :key => 'secret-key').query.split('&')
+
+    pairs.should include('secure=1')
+    pairs.should include('sig=c2lnbmF0dXJl%0A') # ['signature'].pack('m')
+    pairs.should_not include('key=secret-key')
+  end
+
+  it 'should accept File or IO key parameter' do
+    rsa = mock('OpenSSL::PKey::RSA', :private_encrypt => 'signature')
+    digest = mock('OpenSSL::Digest::SHA1', :hexdigest => 'digest')
+    OpenSSL::Digest::SHA1.expects(:new).returns(digest).at_least_once
+    OpenSSL::PKey::RSA.expects(:new).with(File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem')).read).returns(rsa).at_least_once
+
+    pairs = parse_authentication_url(nil, :key => File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem'))).query.split('&')
+
+    pairs.should include('secure=1')
+    pairs.should include('sig=c2lnbmF0dXJl%0A') # ['signature'].pack('m')
+    pairs.should_not include('key=secret-key')
+  end
+
+  it 'should accept OpenSSL::Pkey::RSA key parameter' do
+    digest = mock('OpenSSL::Digest::SHA1', :hexdigest => 'digest')
+    OpenSSL::Digest::SHA1.expects(:new).returns(digest).at_least_once
+
+    pairs = parse_authentication_url(nil, :key => OpenSSL::PKey::RSA.new(File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem')).read)).query.split('&')
+
+    pairs.should include('secure=1')
+    pairs.should include('sig=nhzzbfqHUOhN6iE%2BkyHQabRvtfc3pbxKQt4hHqlNtBZVliswTFfVIISFPo5Z%0Ads6YVeAKdqAAZuVFUwMDihA83ihIf8spWN%2BrKpeLxAhrUCM69oihD7csdedG%0AbN9TCToIp4q9tJj2o4SsAgxs3dK55Nc1vhCOlVB7mIbxM%2B8YGL4%3D%0A') # based on 'digest' data
+    pairs.should_not include('key=secret-key')
+  end
+
   it 'skips parameters that have nil value' do
     query = parse_authentication_url(nil, :secure => nil).query
     query.should_not include('next')

@@ -78,9 +78,34 @@ module Contacts
     #   (default: false)
     def self.authentication_url(target, options = {})
       params = authentication_url_options.merge(options)
+      key = params.delete(:key)
+      params[:secure] = true if !params[:secure] && key
       params[:next] = target
       query = query_string(params)
-      "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
+      url = "https://#{DOMAIN}#{AuthSubPath}Request?#{query}"
+      sig = generate_sig(url, key) if key
+      key ? "#{url}&#{query_string(:sig => sig)}" : url
+    end
+
+    # Generates the signature for a secure AuthSub request. +key+ may be an IO, String or
+    # OpenSSL::PKey::RSA.
+    # Stolen from http://github.com/stuart/google-authsub/lib/googleauthsub.rb
+    def self.generate_sig(url, key)
+      pkey = case key
+      when OpenSSL::PKey::RSA
+        key
+      when File
+        OpenSSL::PKey::RSA.new(key.read)
+      when String
+        OpenSSL::PKey::RSA.new(key)
+      else
+        raise "Private Key in wrong format. Require IO, String or OpenSSL::PKey::RSA, you gave me #{key.class}"
+      end
+      timestamp = Time.now.to_i
+      nonce     = OpenSSL::BN.rand_range(2**64)
+      data      = "GET #{url} #{timestamp} #{nonce}"
+      digest    = OpenSSL::Digest::SHA1.new(data).hexdigest
+      sig       = [pkey.private_encrypt(digest)].pack("m")  #Base64 encode
     end
 
     # Makes an HTTPS request to exchange the given token with a session one. Session
