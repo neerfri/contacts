@@ -105,6 +105,16 @@ describe Contacts::Google do
     found[2].emails.should == ['anonymous@example.com']
   end
 
+  it 'parses the resulting feed into an author name/email pair' do
+    @gmail.stubs(:get)
+    @gmail.expects(:response_body).returns(sample_xml('google-single'))
+
+    @gmail.contacts
+
+    @gmail.author.name.should == 'Elizabeth Bennet'
+    @gmail.author.emails.should == ['liz@gmail.com']
+  end
+
   it 'makes modification time available after parsing' do
     @gmail.updated_at.should be_nil
     @gmail.stubs(:get)

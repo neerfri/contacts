@@ -109,7 +109,7 @@ module Contacts
       pair.split('=').last if pair
     end
     
-    attr_reader :user, :token, :headers
+    attr_reader :user, :token, :headers, :author
     attr_accessor :projection
 
     # A token is required here. By default, an AuthSub token from
@@ -207,6 +207,9 @@ module Contacts
             contacts_found << contact
           end
         end
+
+        entry = (doc / '/feed/author').first
+        @author = Contact.new(entry.at('/email').inner_text, entry.at('/name').inner_text) if entry
 
         contacts_found
       end
