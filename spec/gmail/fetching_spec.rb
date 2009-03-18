@@ -13,6 +13,7 @@ describe Contacts::Google do
   
   after :each do
     FakeWeb.clean_registry
+    Contacts::Google.unset_private_key
   end
 
   describe 'fetches contacts feed via HTTP GET' do
@@ -40,6 +41,29 @@ describe Contacts::Google do
 
       response = @gmail.get({})
       response.body.should == 'full results'
+    end
+
+    it 'with signed requests' do
+      # freeze time and nonce for consistent results
+      time = mock('Time.now')
+      time.expects(:to_i).with().returns(1237384927).at_least_once
+      Time.expects(:now).returns(time).at_least_once
+      OpenSSL::BN.expects(:rand_range).with(2**64).returns(11138977546881557915).at_least_once
+
+      Contacts::Google.set_private_key(File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem')))
+      @gmail = Contacts::Google.new('dummytoken')
+
+      FakeWeb::register_uri(:get, 'www.google.com/m8/feeds/contacts/default/thin',
+        :string => 'thin results',
+        :verify => lambda { |req|
+          req['Authorization'].should == %(AuthSub token="dummytoken" sigalg="rsa-sha1" data="GET http://www.google.com/m8/feeds/contacts/default/thin? 1237384927 11138977546881557915" sig="EAO7okp0W+0kAOOFxaAfexym0tWEgKogHpjSs7AX8GZYBWJvyJg6+SFHMAeGUEpAXIyAxCoF+RYzvEt2ONVXEJKaMw4zo/qAFc/RC4dLkFbzwe4r5srFMAGrgbWgqQEeUBeY2koc0vfs2dfOP19rJgACtksm3HLMKpl8M9sUF8c=")
+          req['Accept-Encoding'].should == 'gzip'
+          req['User-Agent'].should == "Ruby Contacts v#{Contacts::VERSION::STRING} (gzip)"
+        }
+      )
+
+      response = @gmail.get({})
+      response.body.should == 'thin results'
     end
   end
 
