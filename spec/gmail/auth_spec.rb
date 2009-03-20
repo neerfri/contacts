@@ -28,6 +28,32 @@ describe Contacts::Google, '.authentication_url' do
     pairs.should include('session=1')
   end
 
+  it 'should imply secure=true when the key parameter is set' do
+    pairs = parse_authentication_url(nil, :key => File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem'))).query.split('&')
+
+    pairs.should include('secure=1')
+  end
+
+  it 'should accept String key parameter' do
+    key = File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem')).read
+    pairs = parse_authentication_url(nil, :key => key).query.split('&')
+
+    pairs.should include('secure=1')
+    pairs.should_not include("key=#{key}")
+  end
+
+  it 'should accept File or IO key parameter' do
+    pairs = parse_authentication_url(nil, :key => File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem'))).query.split('&')
+
+    pairs.should include('secure=1')
+  end
+
+  it 'should accept OpenSSL::Pkey::RSA key parameter' do
+    pairs = parse_authentication_url(nil, :key => OpenSSL::PKey::RSA.new(File.open(File.join(File.dirname(__FILE__), 'myrsakey.pem')).read)).query.split('&')
+
+    pairs.should include('secure=1')
+  end
+
   it 'skips parameters that have nil value' do
     query = parse_authentication_url(nil, :secure => nil).query
     query.should_not include('next')
