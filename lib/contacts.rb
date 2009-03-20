@@ -54,7 +54,7 @@ module Contacts
   def self.auth_redirect_url_for(provider, options={})
     case provider
       when Contacts::PROVIDER::Google
-        Contacts::Google.authentication_url(options[:return_uri])
+        Contacts::Google.authentication_url(options[:return_uri], :key=>options[:key])
       when Contacts::PROVIDER::WindowsLive
         Contacts::WindowsLive.new.get_authentication_url
       when Contacts::PROVIDER::Yahoo
