@@ -2,6 +2,12 @@ require 'contacts/version'
 
 module Contacts
   
+  module PROVIDER
+    Google = "Google"
+    Yahoo = "Yahoo"
+    WindowsLive = "WindowsLive"
+  end
+  
   Identifier = 'Ruby Contacts v' + VERSION::STRING
   DEFAULT_CONFIG_FILE_PATH = File.join(File.dirname(__FILE__), '/../config/contacts.yml')
   
@@ -47,12 +53,28 @@ module Contacts
   
   def self.auth_redirect_url_for(provider, options={})
     case provider
-      when "Google"
+      when Contacts::PROVIDER::Google
         Contacts::Google.authentication_url(options[:return_uri])
-      when "WindowsLive"
+      when Contacts::PROVIDER::WindowsLive
         Contacts::WindowsLive.new.get_authentication_url
-      when "Yahoo"
+      when Contacts::PROVIDER::Yahoo
         Contacts::Yahoo.new.get_authentication_url
+    end
+  end
+  
+  def self.get_contacts(provider, secret)
+    case provider
+      when Contacts::PROVIDER::WindowsLive
+        wl = Contacts::WindowsLive.new
+        contacts = wl.contacts(secret)
+      when Contacts::PROVIDER::Google
+        gmail = Contacts::Google.new(secret)
+        contacts = gmail.contacts
+      when Contacts::PROVIDER::Yahoo
+        yahoo = Contacts::Yahoo.new
+        contacts = yahoo.contacts(secret)
+      when "Test"
+        contacts = [Contacts::Contact.new("Test", "test@example.com")]
     end
   end
   

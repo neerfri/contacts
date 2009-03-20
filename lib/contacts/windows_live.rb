@@ -58,8 +58,8 @@ module Contacts
     #--
     # You can check an example of a config file inside config/ directory
     #
-    def initialize(config_file=nil)
-      confs = config_file ? YAML.load_file(config_file)['windows_live'] : Contacts.config['windows_live']
+    def initialize(config_file=CONFIG_FILE)
+      confs = Contacts.config['windows_live']
       @wll = WindowsLiveLogin.new(confs['appid'], confs['secret'], confs['security_algorithm'],
                                   nil, confs['policy_url'], confs['return_url'])
     end
